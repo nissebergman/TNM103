@@ -141,8 +141,13 @@ void loop()
 
   /*----------------------------------------------------------*/
 
-  //soundSampleFromADC=badc0; //Filtrera från input
-  soundSampleFromADC=sramBufferSampleValue; //Filtrera från vågform
+
+  /*----- Välj Input --------*/
+  
+  soundSampleFromADC=badc0; //Filtrera input
+  //soundSampleFromADC=sramBufferSampleValue; //Filtrera vågform
+
+  /*--------------------------*/
 
   lowPassFilterAlpha = badc1;
   lowPassFilterAlpha /= 255;
@@ -159,18 +164,17 @@ void loop()
   //Lågpassfiltrerar med lågpassfilter2 för att använda i bandpass
   lowPassFilterOut2 = ((lowPassFilterOut2 * (1-lowPassFilterAlpha2)) + (soundSampleFromADC * lowPassFilterAlpha2));
 
-
   //Skapar högpassfilter genom att subtrahera insignalen med lågpassfiltret. Korrigerar DC-offset.
   highPassFilterOut = ((soundSampleFromADC-128) - (lowPassFilterOut-128))+128;
 
   //Skapar bandpassfilter genom att subtrahera det övre lågpassfiltret (högre brytfrekvens) med det undre (lägre brytfrekvens)
-  bandPassFilterOut = ((soundSampleFromADC-128) - ((lowPassFilterOut-128) - (lowPassFilterOut2-128)))+128;
+  bandPassFilterOut = ((lowPassFilterOut2-128) - (lowPassFilterOut-128))+128;
 
   //Skapar bandstoppfilter
   bandStopFilterOut = ((soundSampleFromADC-128)-(bandPassFilterOut-128))+128;
 
   //Skickar insignal till utsignal
-  //OCR2A = lowPassFilterOut;
+  OCR2A = lowPassFilterOut;
   //OCR2A = lowPassFilterOut2;
   //OCR2A = highPassFilterOut;
   //OCR2A = bandPassFilterOut; //Låter lite shit?
@@ -178,9 +182,6 @@ void loop()
   //OCR2A = sramBufferSampleValue; //Spela ofiltrerad vågform
   
 }
-
-
-
 
 // Funktion för att fylla SRAM buffern med en vågform
 void fillSramBufferWithWaveTable(){
