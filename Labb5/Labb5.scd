@@ -9,7 +9,7 @@ s.boot;
 (
 var detune = 0.1;
 FreqScope(400, 200, 0, server: s);
-SynthDef(\synth1, {arg inputFrequency, gate;
+SynthDef(\synth1, {arg inputFrequency, gate, bufnum;
 
 	var freq = 220;
 
@@ -59,8 +59,21 @@ SynthDef(\synth1, {arg inputFrequency, gate;
 	//Högre ordningen filter
 	var filteredOutput= BLowPass.ar(output, inputFrequency,0.01);
 
+	//Mic
+	var mic= SoundIn.ar(0,1.0,0.0);
+
+	//fil
+	var audioFile = PlayBuf.ar(2, bufnum);
+
+	//Reverb
+	var reverbed=audioFile;
+
+	3.do({ reverbed = AllpassC.ar(reverbed, 0.2, { Rand(0.001, 0.8) }.dup, 6, 1,0)});
+
 	//output=bbsfilter*envelope;
-	output= filteredOutput*envelope*0.01;
+	//output= filteredOutput*envelope*0.01*mic;
+	//output= reverb3;
+	output= reverbed*0.01;
 	Out.ar(0, [output,output]);
 }).add;
 )
@@ -93,16 +106,22 @@ var notes = [57, 60, 64, 69];
 ~synth1 = Synth.new(\synth1).register;
 //~synth1.set(\inputFrequency,440);
 
+
+
 fork{
-	loop{
+	var soundFileBuffer = Buffer.read(s,"/Users/Marit/Desktop/Impulsljud.wav");
+	(1.0).wait;
+	~synth1.set(\bufnum, soundFileBuffer.bufnum);
+	/*loop{
 		for (0,notes.size-1, { arg index;
-			~synth1.set(\inputFrequency, notes[index].midicps); //notes[index].midicps
-			~synth1.set(\gate, 1);
-			(0.5).wait;
+			//~synth1.set(\inputFrequency, 57.midicps); //notes[index].midicps
+
+			/*~synth1.set(\gate, 1);
+			(1.0).wait;
 			~synth1.set(\gate, 0);
-			(0.5).wait;
+			(1.0).wait;*/
 		});
-	};
+	};*/
 };
 )
 
