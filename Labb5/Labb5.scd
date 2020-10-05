@@ -15,7 +15,7 @@ SynthDef(\synth1, {arg inputFrequency, gate, bufnum;
 
 	//Modulation Waveforms
 	var modSin = SinOsc.kr(1, 0, 0.9);
-	var modSaw = LFSaw.kr(1).range(0.001,1);
+	var modSaw = LFSaw.kr(0.1).range(0.001,1); //sätt högre range
 	var modTri = LFTri.kr(1).range(-10,10);
 	var modSquare = LFPulse.kr(1,0,0.5).range(-10,10);
 
@@ -59,21 +59,28 @@ SynthDef(\synth1, {arg inputFrequency, gate, bufnum;
 	//Högre ordningen filter
 	var filteredOutput= BLowPass.ar(output, inputFrequency,0.01);
 
-	//Mic
+	//Mic som input
 	var mic= SoundIn.ar(0,1.0,0.0);
 
-	//fil
+	//Fil som input
 	var audioFile = PlayBuf.ar(2, bufnum);
 
-	//Reverb
+	//Reverb eller delay
 	var reverbed=audioFile;
+	//var reverbed=filteredOutput;
+	var delay = audioFile;
 
-	3.do({ reverbed = AllpassC.ar(reverbed, 0.2, { Rand(0.001, 0.8) }.dup, 6, 1,0)});
 
-	//output=bbsfilter*envelope;
-	//output= filteredOutput*envelope*0.01*mic;
+	//Delay
+	delay = AllpassC.ar(delay, 0.2,0.2,1,1,0);
+
+	//Schroeder reverb
+	//3.do({ reverbed = AllpassC.ar(reverbed, 0.6, { Rand(0.001, 6) }.dup, 1, 1,0)});
+
+	//output=bbsfilter*envelope; //Output med Bandstopfilter
+	//output= filteredOutput*envelope*0.01*mic; //Output med ljudingång
 	//output= reverb3;
-	output= reverbed*0.01;
+	output= delay*0.1;
 	Out.ar(0, [output,output]);
 }).add;
 )
@@ -91,6 +98,8 @@ s.scope;
 var envelope= Env.adsr(0.01, 0.3, 0.5, 5.0, 1, 0.0, 0.0).plot;
 )
 
+
+/* ---- Noise synth -----*/
 /*
 (
 SynthDef(\noiseSynth, {
@@ -109,19 +118,22 @@ var notes = [57, 60, 64, 69];
 
 
 fork{
-	var soundFileBuffer = Buffer.read(s,"/Users/Marit/Desktop/Impulsljud.wav");
+	var soundFileBuffer = Buffer.read(s,"/Users/mac/Music/BanjoGalore.wav"); //Läser in fil
 	(1.0).wait;
 	~synth1.set(\bufnum, soundFileBuffer.bufnum);
-	/*loop{
+	/*
+	loop{
 		for (0,notes.size-1, { arg index;
-			//~synth1.set(\inputFrequency, 57.midicps); //notes[index].midicps
+			~synth1.set(\inputFrequency, 57.midicps); //notes[index].midicps
 
-			/*~synth1.set(\gate, 1);
+			~synth1.set(\gate, 1);
 			(1.0).wait;
 			~synth1.set(\gate, 0);
-			(1.0).wait;*/
+			(1.0).wait;
 		});
-	};*/
+	};
+	*/
 };
+
 )
 
