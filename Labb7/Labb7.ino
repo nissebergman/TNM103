@@ -36,8 +36,8 @@ volatile byte ibb; // Global interruptvariabel
 int bufferIndex1 = 0; // Index i SRAM buffer
 int bufferIndex2;
 
-int in; // Variabel för att läsa samplevärde från ADCn
-int out; // Variabel för att läsa samplevärde från SRAM buffer
+int soundSampleFromADC; // Variabel för att läsa samplevärde från ADCn
+int soundSampleFromSramBuffer; // Variabel för att läsa samplevärde från SRAM buffer
 int k;
 byte sramBufferSampleValue; // sparat samplevärde i SRAM buffer
 
@@ -91,10 +91,8 @@ void setup()
   sbi(TIMSK2,TOIE2); // Aktiverar Timer2 Interrupt
   
   // Tilldela variabel soundSampleFromADC ett samplevärde från ADCn
-  in = badc0;  
+  soundSampleFromADC = badc0;  
 }
-
-
 
 
 // loop() är en funktion som körs om och om igen efter att Arduinot har startats och setup() har initierat Arduinot. Detta är huvudfunktionen och den körs så snabbt/ofta det går enligt klockfrekvensen i Arduinot. Normal klockfrekvens är 16MHz.
@@ -114,7 +112,7 @@ void loop()
   /*----- Välj Input --------*/
 
   //Overdrive
-  /*in=badc0-127;
+  /*soundSampleFromADC=badc0-127;
 
   if(badc1==0) badc1=1;
 
@@ -123,50 +121,50 @@ void loop()
   if(overdrive>127) overdrive=127;
   if(overdrive<-127) overdrive=-127;
 
-  out=overdrive+127;
+  sramBufferSampleValue=overdrive+127;
   */
-  //Flanger
-  /*
-  in=badc0;
 
-  sramBuffer[bufferIndex1]= in;
-  out=sramBuffer[bufferIndex2];
+  /*
+  //Flanger
+
+  soundSampleFromADC=badc0;
+
+  sramBuffer[bufferIndex1]=(byte)soundSampleFromADC;
+  sramBufferSampleValue=sramBuffer[bufferIndex2];
 
   bufferIndex1++;
+  
+  bufferIndex2=bufferIndex1+badc1;
+  
+  bufferIndex2= bufferIndex2 & 511;
   bufferIndex1 %= 512;
 
-  bufferIndex2=bufferIndex1+badc1;
-  //bufferIndex2= bufferIndex2 & 512; //Ger fel!
-  bufferIndex2 %= 512;
-
-  out=(((sramBuffer[bufferIndex1]-127)+(sramBuffer[bufferIndex2]-127)) + 127)/2;
+  sramBufferSampleValue=(((sramBuffer[bufferIndex1]-127) + (sramBuffer[bufferIndex2]-127)) + 127)/2;
   //Serial.println(bufferIndex1);
-  */
+*/
 
   //Reverb
-  out=(sramBuffer[bufferIndex1]-127)*-1;
+  sramBufferSampleValue = sramBuffer[bufferIndex1];
+  soundSampleFromSramBuffer = 127-sramBufferSampleValue;
+  soundSampleFromSramBuffer= soundSampleFromSramBuffer* map(badc1,0,255,0,240)/255;
 
-  k = out*badc1;
-
-  out=map(k,-32385,32385, 0, 110);
-  //out = ((out*badc1)/32385) * 110;
   
+  soundSampleFromADC= badc0-127;
+
+  soundSampleFromADC=soundSampleFromADC+soundSampleFromSramBuffer; 
   
-  in= badc0-127;
+  if(soundSampleFromADC>127) soundSampleFromADC=127;
+  if(soundSampleFromADC<-127) soundSampleFromADC=-127;
 
-  in=in+out;
-  
-  if(in>127) in=127;
-  if(in<-127) in=-127;
+  sramBufferSampleValue=soundSampleFromADC+127; //srambuffersamplevalue är i byte, därför används den inte förens nu då dc offseten är tillbaka
 
-  in=in+127;
-
-  sramBuffer[bufferIndex1]=in;
+  sramBuffer[bufferIndex1]=sramBufferSampleValue;
 
   bufferIndex1++;
   bufferIndex1%=512;
 
-  OCR2A = sramBuffer[bufferIndex1];
+  OCR2A = sramBufferSampleValue;
+  
   
 }
 
